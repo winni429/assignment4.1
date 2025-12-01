@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singapore PSI Readings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .info-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .data-label {
+            font-weight: 600;
+        }
+        .status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            color: white;
+        }
+        .status-good {
+            background-color: #2ecc71;
+        }
+        .status-moderate {
+            background-color: #f39c12;
+        }
+        .status-unhealthy {
+            background-color: #e74c3c;
+        }
+        .last-updated {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            text-align: right;
+            margin-bottom: 10px;
+        }
+        .refresh-status {
+            color: #3498db;
+            font-size: 0.9em;
+            text-align: right;
+            margin-top: -10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Singapore PSI Readings Dashboard</h1>
+        
+        <div class="info-section">
+            <p><strong>PSI (Pollutant Standards Index)</strong> is a measure of air quality. Lower values indicate better air quality.</p>
+            <p>
+                <span class="status status-good">Good (0-50)</span> 
+                <span class="status status-moderate">Moderate (51-100)</span> 
+                <span class="status status-unhealthy">Unhealthy (101+)</span>
+            </p>
+        </div>
+        
+        <p class="last-updated">Last Updated: <span id="updateTime"></span></p>
+        <p class="refresh-status">Next Auto-Refresh: <span id="nextRefreshTime"></span></p>
+        
+        <table id="psiTable">
+            <thead>
+                <tr>
+                    <<th>Reading Type</</th>
+                    <<th>Description</</th>
+                    <<th>West</</th>
+                    <<th>East</</th>
+                    <<th>Central</</th>
+                    <<th>South</</th>
+                    <<th>North</</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be inserted dynamically via JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Refresh interval set to 1 hour (3600000 ms) - matches Singapore's official PSI update frequency
+        const REFRESH_INTERVAL = 3600000; 
+        let refreshTimer = null;
+
+        // English descriptions for reading types (aligned with Singapore's NEA terms)
+        const readingTypeLabels = {
+            "o3_sub_index": "Ozone Sub-Index",
+            "pm10_twenty_four_hourly": "PM10 24-Hour Average",
+            "pm10_sub_index": "PM10 Sub-Index",
+            "co_sub_index": "Carbon Monoxide Sub-Index",
+            "pm25_twenty_four_hourly": "PM2.5 24-Hour Average",
+            "so2_sub_index": "Sulfur Dioxide Sub-Index",
+            "co_eight_hour_max": "Carbon Monoxide 8-Hour Max",
+            "no2_one_hour_max": "Nitrogen Dioxide 1-Hour Max",
+            "so2_twenty_four_hourly": "Sulfur Dioxide 24-Hour Average",
+            "pm25_sub_index": "PM2.5 Sub-Index",
+            "psi_twenty_four_hourly": "24-Hour PSI",
+            "o3_eight_hour_max": "Ozone 8-Hour Max"
+        };
+
+        // Get status class based on PSI value
+        function getStatusClass(value) {
+            if (value <= 50) return "status-good";
+            if (value <= 100) return "status-moderate";
+            return "status-unhealthy";
+        }
+
+        // Get status text based on PSI value
+        function getStatusText(value) {
+            if (value <= 50) return "Good";
+            if (value <= 100) return "Moderate";
+            return "Unhealthy";
+        }
+
+        // Format time to Singapore timezone (24-hour format, consistent with NEA's display)
+        function formatTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('en-SG', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        // Update next refresh time display
+        function updateNextRefreshTime() {
+            const nextTime = new Date(Date.now() + REFRESH_INTERVAL);
+            document.getElementById('nextRefreshTime').textContent = formatTime(nextTime);
+        }
+
+        // Render table with latest PSI data
+        function renderTable(data) {
+            // Update last updated time with API's timestamp
+            const updateTime = data.items[0].update_timestamp;
+            document.getElementById('updateTime').textContent = formatTime(updateTime);
+            // Update next refresh time
+            updateNextRefreshTime();
+            
+            const readings = data.items[0].readings;
+            const tableBody = document.querySelector('#psiTable tbody');
+            const readingTypes = Object.keys(readings);
+            const regions = ["west", "east", "central", "south", "north"];
+
+            // Clear existing table content before inserting new data
+            tableBody.innerHTML = '';
+
+            // Insert each reading type as a row with region values
+            readingTypes.forEach(type => {
+                const row = document.createElement('tr');
+                let rowHtml = `
+                    <td class="data-label">${type}</td>
+                    <td>${readingTypeLabels[type] || '-'}</td>
+                `;
+                
+                // Add value and status badge for each region
+                regions.forEach(region => {
+                    const value = readings[type][region];
+                    const statusClass = getStatusClass(value);
+                    const statusText = getStatusText(value);
+                    
+                    rowHtml += `
+                        <td>
+                            ${value} 
+                            <span class="status ${statusClass}">${statusText}</span>
+                        </td>
+                    `;
+                });
+                
+                row.innerHTML = rowHtml;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Fetch data from Singapore's open data API and render
+        function fetchAndRenderData() {
+            fetch('https://api.data.gov.sg/v1/environment/psi')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network Error: ${response.status} (${response.statusText})`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    renderTable(data);
+                })
+                .catch(error => {
+                    console.error('Failed to fetch PSI data:', error);
+                    const tableBody = document.querySelector('#psiTable tbody');
+                    tableBody.innerHTML = `<tr><td colspan="7">Failed to load data: ${error.message}. Will retry in 1 hour.</td></tr>`;
+                    // Update next refresh time even if fetch fails
+                    updateNextRefreshTime();
+                });
+        }
+
+        // Initialize: First data load + start auto-refresh timer
+        function init() {
+            fetchAndRenderData();
+            refreshTimer = setInterval(fetchAndRenderData, REFRESH_INTERVAL);
+        }
+
+        // Start initialization when page finishes loading
+        window.onload = init;
+
+        // Clean up timer when page is closed to avoid unnecessary requests
+        window.onunload = function() {
+            if (refreshTimer) clearInterval(refreshTimer);
+        };
+    </script>
+</body>
+</html>
