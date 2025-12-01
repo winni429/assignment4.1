@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDV Assignment 5 - Unified Integration (Fixed)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <script>
+        // Tailwind Config (From Assignment 3)
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6', secondary: '#10B981', accent: '#8B5CF6', 
+                        neutral: '#64748B', light: '#F8FAFC', dark: '#1E293B', gold: '#F59E0B'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        /* 核心布局和组件样式 (来自 A3) */
+        @layer utilities {
+            .chart-container { @apply relative h-[400px] w-full md:w-3/4 mx-auto my-8; }
+            .control-btn { @apply px-4 py-2 rounded-md bg-primary/10 hover:bg-primary/20 transition-colors duration-300 cursor-pointer text-gray-800 font-medium; }
+            /* 修正：确保页面内容初始是隐藏的，且激活时显示 */
+            .page-content { display: none; } 
+            .page-content.active { display: block; animation: fadeIn 0.5s ease; }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+            /* A1 Table Styling 优化 */
+            #psiTable { @apply border-collapse w-full my-5 shadow-lg rounded-lg overflow-hidden; }
+            #psiTable th { @apply bg-dark text-white font-bold p-3 text-left; }
+            #psiTable td { @apply border border-gray-200 p-3 text-left; }
+            .status { @apply inline-block px-2 py-0.5 rounded text-xs text-white ml-2; }
+            .status-good { @apply bg-secondary; }
+            .status-moderate { @apply bg-gold; }
+            .status-unhealthy { @apply bg-red-500; }
+            .psi-info-section { @apply bg-primary/10 p-4 rounded-lg mb-5 border-l-4 border-primary; }
+        
+            /* A2 Table Styling 优化 */
+            #svgTable { @apply border-collapse w-full my-8 bg-white shadow-lg; }
+            #svgTable th, #svgTable td { @apply border border-gray-300 p-3 text-center; }
+            #svgTable th { @apply bg-gray-200 font-bold; }
+            #svgTable img, #svgTable svg { @apply max-w-[120px] max-h-[120px] mx-auto block; }
+            
+            /* A4 D3 Chart 优化 */
+            .d3-tooltip { @apply absolute bg-dark text-white p-2 rounded-md pointer-events-none text-sm opacity-0 shadow-lg; z-index: 100; transition: opacity 0.3s; }
+            .d3-legend { @apply flex flex-wrap justify-center gap-4 mt-6 pt-4 border-t border-gray-200; }
+
+            /* A3 内部子页面样式 */
+            .a3-page-content { display: none; }
+            .a3-page-content.active { display: block; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <div class="font-bold text-xl text-primary">IDV Assignment 5 Unified Page</div>
+                <div class="flex space-x-2 sm:space-x-4 overflow-x-auto">
+                    <button class="nav-btn px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors" data-page="page-overview">Overview</button>
+                    <button class="nav-btn px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors" data-page="page-a1">A1: PSI Data</button>
+                    <button class="nav-btn px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors" data-page="page-a2">A2: SVG Transform</button>
+                    <button class="nav-btn px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors" data-page="page-a3">A3: Interactive Suite</button>
+                    <button class="nav-btn px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors" data-page="page-a4">A4: D3 Line Chart</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 py-8">
+        
+        <div id="page-overview" class="page-content active bg-white rounded-lg shadow-lg p-6 max-w-5xl w-full mx-auto">
+            <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Assignment 5: Integration Overview</h1>
+            <div class="space-y-4 text-gray-700">
+                <h2 class="text-xl font-semibold text-primary">内容总结</h2>
+                <p>本页面将作业 1-4 整合到一个统一的网页中。所有功能均保持完整，并使用一致的布局和样式。</p>
+                
+                <h2 class="text-xl font-semibold text-primary">整合策略和遇到的困难</h2>
+                <p><strong>整合方法:</strong> [请在此描述您如何将 A1-A4 结合在一起，例如使用了 A3 的 Tailwind 框架和导航结构]。</p>
+                <p><strong>遇到的困难:</strong> [请在此描述您遇到的 CSS 冲突、脚本 ID 假设或布局问题]。</p>
+                <p class="p-3 bg-red-100 border-l-4 border-red-500 italic">
+                    **最难整合的作业**是：[请填写 A1/A2/A3/A4]
+                </p>
+                <p><strong>原因和解决方案:</strong> [请解释原因，例如 D3.js 重新渲染、复杂的 Chart.js 插件或严格的布局限制]。</p>
+            </div>
+        </div>
+
+        <div id="page-a1" class="page-content bg-white rounded-lg shadow-lg p-6 max-w-5xl w-full mx-auto">
+            <h1 class="text-2xl font-bold text-center mb-4 text-gray-800">Assignment 1: Singapore PSI Readings Dashboard</h1>
+            
+            <div class="psi-info-section">
+                <p><strong>PSI (Pollutant Standards Index)</strong> is a measure of air quality. Lower values indicate better air quality.</p>
+                <p>
+                    <span class="status status-good">Good (0-50)</span> 
+                    <span class="status status-moderate">Moderate (51-100)</span> 
+                    <span class="status status-unhealthy">Unhealthy (101+)</span>
+                </p>
+            </div>
+            <p class="last-updated">Last Updated: <span id="updateTime"></span></p>
+            <p class="refresh-status">Next Auto-Refresh: <span id="nextRefreshTime"></span></p>
+            
+            <table id="psiTable">
+                <thead>
+                    <tr>
+                        <th>Reading Type</th><th>Description</th><th>West</th><th>East</th><th>Central</th><th>South</th><th>North</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="7">Loading data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="page-a2" class="page-content bg-white rounded-lg shadow-lg p-6 max-w-5xl w-full mx-auto">
+            <h1 class="text-2xl font-bold text-center mb-4 text-gray-800">Assignment 2: SVG Image Transformations</h1>
+            <p class="text-center text-gray-600 mb-6">Demonstrating CSS transform and filter effects on 10 SVG images.</p>
+            
+            <table id="svgTable">
+                <tr>
+                    <th>原始图片</th>
+                    <th>左右镜像</th>
+                    <th>旋转180度</th>
+                    <th>垂直压缩50%</th>
+                    <th>灰度效果</th>
+                </tr>
+                到 ) 粘贴到此处*** 确保您复制了所有 10 个 <tr>...</tr> 块。
+                -->
+                <tr><td><img src="svg1.svg" alt="原始svg1"></td><td><div style="transform: scaleX(-1);"><img src="svg1.svg" alt="左右镜像svg1"></div></td><td><div style="transform: rotate(180deg);"><img src="svg1.svg" alt="旋转180度svg1"></div></td><td><div style="transform: scaleY(0.5);"><img src="svg1.svg" alt="垂直压缩svg1"></div></td><td><img src="svg1.svg" style="filter: grayscale(100%);" alt="灰度svg1"></td></tr>
+                <tr><td><img src="svg2.svg" alt="原始svg2"></td><td><div style="transform: scaleX(-1);"><img src="svg2.svg" alt="左右镜像svg2"></div></td><td><div style="transform: rotate(180deg);"><img src="svg2.svg" alt="旋转180度svg2"></div></td><td><div style="transform: scaleY(0.5);"><img src="svg2.svg" alt="垂直压缩svg2"></div></td><td><img src="svg2.svg" style="filter: grayscale(100%);" alt="灰度svg2"></td></tr>
+                <tr><td><img src="svg3.svg" alt="原始svg3"></td><td><div style="transform: scaleX(-1);"><img src="svg3.svg" alt="左右镜像svg3"></div></td><td><div style="transform: rotate(180deg);"><img src="svg3.svg" alt="旋转180度svg3"></div></td><td><div style="transform: scaleY(0.5);"><img src="svg3.svg" alt="垂直压缩svg3"></div></td><td><img src="svg3.svg" style="filter: grayscale(100%);" alt="灰度svg3"></td></tr>
+                <tr><td><img src="svg4.svg" alt="原始svg4"></td><td><div style="transform: scaleX(-1);"><img src="svg4.svg" alt="左右镜像svg4"></div></td><td><div style="transform: rotate(180deg);"><img src="svg4.svg" alt="旋转180度svg4"></div></td><td><div style="transform: scaleY(0.5);"><img src="svg4.svg" alt="垂直压缩svg4"></div></td><td><img src="svg4.svg" style="filter: grayscale(100%);" alt="灰度svg4"></td></tr>
+                <tr><td><img src="svg5.svg" alt="原始svg5"></td><td><div style="transform: scaleX(-1);"><img src="svg5.svg" alt="左右镜像svg5"></div></td><td><div style="transform: rotate(180deg);"><img src="svg5.svg" alt="旋转180度svg5"></div></td><td><div style="transform: scaleY(0.5);"><img src="svg5.svg" alt="垂直压缩svg5"></div></td><td><img src="svg5.svg" style="filter: grayscale(100%);" alt="灰度svg5"></td></tr>
+                <tr><td><img src="svg6.svg" alt="原始svg6"></td><td><div style="transform: scaleX(-1);"><img src="svg6.svg" alt="左右镜像svg6"></div></td><td><div style="transform: rotate(180deg);"><img src="svg6.svg" alt="旋转180度svg6"></div></td><td><div style="transform: scaleY(0.5);"><img src="svg6.svg" alt="垂直压缩svg6"></div></td><td><img src="svg6.svg" style="filter: grayscale(100%);" alt="灰度svg6"></td></tr>
+                <tr><td><img src="svg7.svg" alt="原始svg7"></td><td><div style="transform: scaleX(-1);"><img src="svg7.svg" alt="左右镜像svg7"></div></td><td><div style="transform: rotate(180deg);"><img src="svg7.svg" alt="旋转180度svg7"></div></td><td><div style="transform: scaleY(0.5);"><img src="svg7.svg" alt="垂直压缩svg7"></div></td><td><img src="svg7.svg" style="filter: grayscale(100%);" alt="灰度svg7"></td></tr>
+                <tr><td><img src="svg8.svg" alt="原始svg8"></td><td><div style="transform: scaleX(-1);"><img src="svg8.svg" alt="左右镜像svg8"></div></td><td><div style="transform: rotate(180deg);"><img src="svg8.svg" alt="旋转180度svg8"></div></td><td><div style="transform: scaleY(0.5);"><img src="svg8.svg" alt="垂直压缩svg8"></div></td><td><img src="svg8.svg" style="filter: grayscale(100%);" alt="灰度svg8"></td></tr>
+                <tr><td><img src="svg9.svg" alt="原始svg9"></td><td><div style="transform: scaleX(-1);"><img src="svg9.svg" alt="左右镜像svg9"></div></td><td><div style="transform: rotate(180deg);"><img src="svg9.svg" alt="旋转180度svg9"></div></td><td><div style="transform: scaleY(0.5);"><img src="svg9.svg" alt="垂直压缩svg9"></div></td><td><img src="svg9.svg" style="filter: grayscale(100%);" alt="灰度svg9"></td></tr>
+                <tr><td><img src="svg10.svg" alt="原始svg10"></td><td><div style="transform: scaleX(-1);"><img src="svg10.svg" alt="左右镜像svg10"></div></td><td><div style="transform: rotate(180deg);"><img src="svg10.svg" alt="旋转180度svg10"></div></td><td><div style="transform: scaleY(0.5);"><img src="svg10.svg" alt="垂直压缩svg10"></div></td><td><img src="svg10.svg" style="filter: grayscale(100%);" alt="灰度svg10"></td></tr>
+            </table>
+        </div>
+
+        <div id="page-a3" class="page-content bg-white rounded-lg shadow-lg p-6 max-w-5xl w-full mx-auto">
+            <h1 class="text-2xl font-bold text-center mb-4 text-gray-800">Assignment 3: Interactive Visualizations Suite</h1>
+            
+            <div class="flex justify-center gap-4 mb-4 border-b pb-4">
+                <button class="nav-btn-a3 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors" data-page="a3-page1">Vector Diagram</button>
+                <button class="nav-btn-a3 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors" data-page="a3-page2">Data Charts</button>
+                <button class="nav-btn-a3 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors" data-page="a3-page3">Venn Diagram</button>
+                <button class="nav-btn-a3 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors" data-page="a3-page4">Validation Chart</button>
+                <button class="nav-btn-a3 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors" data-page="a3-page5">Density Distribution</button>
+            </div>
+
+            <div id="a3-page1" class="a3-page-content active">
+                <h2 class="text-xl font-semibold text-center mb-4 text-gray-700">Vector Parallelogram Illustration</h2>
+                <div class="flex justify-center gap-4 mb-4 flex-wrap">
+                    <button id="zoom-in" class="bg-primary hover:bg-primary/80 text-white px-3 py-1 rounded-md transition-colors text-sm"><i class="fa fa-search-plus mr-1"></i> Zoom In</button>
+                    <button id="zoom-out" class="bg-primary hover:bg-primary/80 text-white px-3 py-1 rounded-md transition-colors text-sm"><i class="fa fa-search-minus mr-1"></i> Zoom Out</button>
+                    <button id="show-coords" class="bg-secondary hover:bg-secondary/80 text-white px-3 py-1 rounded-md transition-colors text-sm"><i class="fa fa-crosshairs mr-1"></i> Show Coordinates</button>
+                    <button id="reset-btn" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-md transition-colors text-sm"><i class="fa fa-refresh mr-1"></i> Reset View</button>
+                </div>
+                <div class="relative w-full aspect-square max-w-2xl mx-auto border border-gray-200 rounded-md" id="vector-diagram">
+                    <div id="vector-info" class="info-box absolute top-2 right-2 hidden"></div>
+                    <svg class="w-full h-full parallelogram" viewBox="0 50 500 400" id="vector-svg">
+                        <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M 50 0 L 0 0 0 50" fill="none" stroke="#f0f0f0" stroke-width="0.5"/></pattern>
+                        <rect width="100%" height="100%" fill="url(#grid)" />
+                        <path d="M150,100 L400,100 L300,300 L50,300 Z" fill="none" stroke="#333" stroke-width="2" class="vector-line" />
+                        <path d="M150,100 L300,300" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-dasharray="5,5" class="vector-line diagonal-1" />
+                        <path d="M400,100 L50,300" fill="none" stroke="#60A5FA" stroke-width="2" stroke-dasharray="5,5" class="vector-line diagonal-2" />
+                        <path d="M150,100 L400,100" fill="none" stroke="#3B82F6" stroke-width="3" class="vector-line e1a" />
+                        <polygon points="400,100 385,95 385,105" fill="#3B82F6" class="vector-arrow draggable" data-vector="e1a" />
+                        <path d="M150,100 L50,300" fill="none" stroke="#10B981" stroke-width="3" class="vector-line e2a" />
+                        <polygon points="50,300 65,295 65,305" fill="#10B981" class="vector-arrow draggable" data-vector="e2a" />
+                        <path d="M50,300 L300,300" fill="none" stroke="#8B5CF6" stroke-width="3" class="vector-line e1b" />
+                        <polygon points="300,300 285,295 285,305" fill="#8B5CF6" class="vector-arrow draggable" data-vector="e1b" />
+                        <path d="M300,300 L400,100" fill="none" stroke="#EC4899" stroke-width="3" class="vector-line e2b" />
+                        <polygon points="400,100 395,115 405,115" fill="#EC4899" class="vector-arrow draggable" data-vector="e2b" />
+                        <text x="420" y="100" class="vector-label e1a-label text-primary font-bold" data-vector="e1a">e<tspan baseline-shift="super" font-size="0.7em">α</tspan><tspan baseline-shift="sub" font-size="0.7em">1</tspan></text>
+                        <text x="120" y="80" class="vector-label e2a-label text-secondary font-bold" data-vector="e2a">e<tspan baseline-shift="super" font-size="0.7em">α</tspan><tspan baseline-shift="sub" font-size="0.7em">2</tspan></text>
+                        <text x="320" y="320" class="vector-label e1b-label text-accent font-bold" data-vector="e1b">e<tspan baseline-shift="super" font-size="0.7em">β</tspan><tspan baseline-shift="sub" font-size="0.7em">1</tspan></text>
+                        <text x="30" y="320" class="vector-label e2b-label text-pink-500 font-bold" data-vector="e2b">e<tspan baseline-shift="super" font-size="0.7em">β</tspan><tspan baseline-shift="sub" font-size="0.7em">2</tspan></text>
+                        <circle cx="150" cy="100" r="4" fill="#333" />
+                        <text x="130" y="90" font-size="12">O</text>
+                    </svg>
+                </div>
+                <div class="interaction-guide bg-light p-4 rounded-lg shadow max-w-2xl mx-auto mt-6">
+                    <h3 class="font-semibold text-gray-800 mb-2">Interaction Guide:</h3>
+                    <p class="text-gray-700 text-sm">1. Drag vector arrows to adjust their length and direction.</p>
+                    <p class="text-gray-700 text-sm">2. Hover over vector labels to see highlight effect, click to pin highlight.</p>
+                    <p class="text-gray-700 text-sm">3. Use zoom in/out buttons to adjust view scale.</p>
+                    <p class="text-gray-700 text-sm">4. Click "Show Coordinates" to view vector coordinate information.</p>
+                    <p class="text-gray-700 text-sm">5. Click "Reset View" to restore initial state.</p>
+                </div>
+            </div>
+
+            <div id="a3-page2" class="a3-page-content hidden">
+                <h2 class="text-xl font-semibold text-center mb-4 text-gray-700">Probability & Position Charts</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-gray-50 p-4 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4 text-gray-700">Probability Distribution</h3>
+                        <div class="relative w-full h-[300px]">
+                            <svg class="w-full h-full" viewBox="0 0 400 300">
+                                <line x1="50" y1="250" x2="350" y2="250" stroke="#333" stroke-width="2" />
+                                <line x1="50" y1="250" x2="50" y2="50" stroke="#333" stroke-width="2" />
+                                <polygon points="350,250 340,245 340,255" fill="#333" />
+                                <polygon points="50,50 45,60 55,60" fill="#333" />
+                                <line x1="100" y1="250" x2="100" y2="245" stroke="#333" />
+                                <line x1="150" y1="250" x2="150" y2="245" stroke="#333" />
+                                <line x1="350" y1="250" x2="350" y2="245" stroke="#333" />
+                                <line x1="50" y1="200" x2="45" y2="200" stroke="#333" />
+                                <line x1="50" y1="100" x2="45" y2="100" stroke="#333" />
+                                <text x="360" y="255" font-size="12" fill="#333">i/n</text>
+                                <text x="55" y="45" font-size="12" fill="#333">p</text>
+                                <text x="100" y="265" font-size="10" fill="#333">i/n</text>
+                                <text x="140" y="265" font-size="10" fill="#333">(i+Δn)/n</text>
+                                <text x="345" y="265" font-size="10" fill="#333">1</text>
+                                <text x="30" y="203" font-size="10" fill="#333">p₁ (Low)</text>
+                                <text x="30" y="103" font-size="10" fill="#333">p₂ (High)</text>
+                                <line x1="50" y1="200" x2="350" y2="200" stroke="#999" stroke-width="1" stroke-dasharray="4,2" />
+                                <line x1="50" y1="100" x2="200" y2="100" stroke="#999" stroke-width="1" stroke-dasharray="4,2" />
+                                <line x1="300" y1="100" x2="350" y2="100" stroke="#999" stroke-width="1" stroke-dasharray="4,2" />
+                                <rect x="100" y="100" width="50" height="100" fill="#C4B5FD" opacity="0.7" class="data-point" />
+                                <rect x="100" y="200" width="250" height="50" fill="#C4B5FD" opacity="0.5" class="data-point" />
+                                <rect x="300" y="100" width="50" height="100" fill="none" stroke="#9333EA" stroke-width="1.5" stroke-dasharray="4,2" class="data-point" />
+                                <line x1="170" y1="150" x2="280" y2="150" stroke="#7C3AED" stroke-width="2" stroke-dasharray="0" />
+                                <polygon points="280,150 270,145 270,155" fill="#7C3AED" />
+                                <rect id="tooltip1" class="tooltip" x="0" y="0" rx="4" ry="4" fill="white" stroke="#ccc" stroke-width="1" width="100" height="40" />
+                                <text id="tooltip-text1" class="tooltip" x="0" y="0" font-size="12" fill="#333"></text>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4 text-gray-700">Position Chart</h3>
+                        <div class="relative w-full h-[300px]">
+                            <svg class="w-full h-full" viewBox="0 0 400 300">
+                                <line x1="50" y1="250" x2="350" y2="250" stroke="#333" stroke-width="2" />
+                                <line x1="50" y1="250" x2="50" y2="50" stroke="#333" stroke-width="2" />
+                                <polygon points="350,250 340,245 340,255" fill="#333" />
+                                <polygon points="50,50 45,60 55,60" fill="#333" />
+                                <line x1="50" y1="250" x2="50" y2="245" stroke="#333" />
+                                <line x1="200" y1="250" x2="200" y2="245" stroke="#333" />
+                                <line x1="350" y1="250" x2="350" y2="245" stroke="#333" />
+                                <line x1="50" y1="250" x2="45" y2="250" stroke="#333" />
+                                <line x1="50" y1="150" x2="45" y2="150" stroke="#333" />
+                                <line x1="50" y1="50" x2="45" y2="50" stroke="#333" />
+                                <text x="45" y="255" font-size="10" fill="#333">0</text>
+                                <text x="190" y="265" font-size="10" fill="#333">0.5</text>
+                                <text x="345" y="265" font-size="10" fill="#333">1</text>
+                                <text x="55" y="255" font-size="10" fill="#333">position</text>
+                                <text x="30" y="253" font-size="10" fill="#333">0</text>
+                                <text x="30" y="153" font-size="10" fill="#333">20</text>
+                                <text x="30" y="53" font-size="10" fill="#333">40</text>
+                                <path d="M100,100 Q200,110 300,150" fill="none" stroke="#10B981" stroke-width="2.5" class="data-point" />
+                                <path d="M100,80 Q200,90 300,120" fill="none" stroke="#A7F3D0" stroke-width="2" stroke-dasharray="5,3" class="data-point" />
+                                <rect id="tooltip2" class="tooltip" x="0" y="0" rx="4" ry="4" fill="white" stroke="#ccc" stroke-width="1" width="80" height="30" />
+                                <text id="tooltip-text2" class="tooltip" x="0" y="0" font-size="12" fill="#333"></text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 text-center text-gray-600"><p>Interactive features: Hover over chart elements to see details</p></div>
+                <div class="creation-steps max-w-4xl mx-auto mt-8"><h3 class="font-semibold text-gray-800 mb-2">Creation Process:</h3><p class="text-gray-700 text-sm">1. Design SVG charts with coordinate systems and axis labels</p><p class="text-gray-700 text-sm">2. Add data visualization elements (bars, curves, shapes)</p><p class="text-gray-700 text-sm">3. Implement interactive tooltips using JavaScript event listeners</p><p class="text-gray-700 text-sm">4. Apply CSS transitions for smooth hover effects</p><p class="text-gray-700 text-sm">5. Ensure responsive layout with Tailwind CSS grid system</p></div>
+            </div>
+            
+            <div id="a3-page3" class="a3-page-content hidden">
+                <h2 class="text-xl font-semibold text-center mb-4 text-gray-700">Enhanced Interactive Venn Diagram</h2>
+                <div style="max-width: 700px; margin: 0 auto;">
+                    <svg width="600" height="550" viewBox="0 0 600 550" xmlns="http://www.w3.org/2000/svg">
+                        <circle class="section" cx="180" cy="320" r="180" fill="#C8B6E2" fill-opacity="0.9" data-area="delete" data-description="删除操作：移除不需要的内容或元素" />
+                        <circle class="section" cx="300" cy="200" r="170" fill="#D8C3A5" fill-opacity="0.9" data-area="replace" data-description="替换操作：用新内容或元素替换现有项" />
+                        <circle class="section" cx="420" cy="320" r="180" fill="#F2D7A6" fill-opacity="0.9" data-area="rewrite" data-description="重写操作：对内容进行修改和重构" />
+                        <text x="100" y="320" font-size="24" font-weight="bold" class="label">I</text>
+                        <text x="300" y="120" font-size="24" font-weight="bold" class="label">II</text>
+                        <text x="500" y="320" font-size="24" font-weight="bold" class="label">III</text>
+                        <text x="210" y="220" font-size="24" font-weight="bold" class="label">IV</text>
+                        <text x="380" y="220" font-size="24" font-weight="bold" class="label">V</text>
+                        <text x="260" y="380" font-size="24" font-weight="bold" class="label">VI</text>
+                        <text x="300" y="270" font-size="24" font-weight="bold" class="label">VII</text>
+                        <text x="60" y="520" font-size="20" font-weight="bold" class="label">Delete</text>
+                        <text x="250" y="80" font-size="20" font-weight="bold" class="label">Replace</text>
+                        <text x="400" y="520" font-size="20" font-weight="bold" class="label">Rewrite</text>
+                    </svg>
+                    <p style="text-align: center; color: #666; margin-top: 10px;">交互提示：悬停在圆上查看高亮效果，点击圆可选中/取消选中</p>
+                    <div class="info-panel" id="infoPanel"><h3 id="panelTitle">操作信息</h3><p id="panelDescription"></p></div>
+                    <div class="count-display" id="selectionCount">已选中: 0 个区域</div>
+                    <button class="reset-btn" id="resetBtn">重置选中状态</button>
+                    <div class="creation-steps"><h3>Creation Process:</h3><p>1. Draw three overlapping circles with SVG at triangular positions</p><p>2. Apply distinct colors to each circle (purple, brown, yellow)</p><p>3. Add Roman numeral labels (I-VII) for intersection areas</p><p>4. Implement hover effects with CSS transitions</p><p>5. Add click-to-select functionality using JavaScript</p></div>
+                </div>
+            </div>
+            
+            <div id="a3-page4" class="a3-page-content hidden">
+                <h2 class="text-xl font-semibold text-center mb-4 text-gray-700">Cross Validation Accuracy Chart</h2>
+                <div class="mb-8"><h3 class="text-lg font-bold mb-3 text-gray-800">AI Model Development Process</h3><p class="text-gray-700 mb-2">This chart visualizes cross-validation results of three NLP models.</p><ul class="list-disc pl-5 text-gray-700 space-y-1"><li>Data collection and preprocessing for training AI models</li><li>Fine-tuning BERT, RoBERTa, and BART on domain-specific datasets</li><li>Implementing 10-fold cross-validation to ensure result reliability</li><li>Calculating accuracy metrics and standard deviation for each model</li><li>Visualizing performance comparisons using Chart.js</li><li>Analyzing results to identify the most effective AI model for the task</li></ul></div>
+                <div class="flex flex-wrap gap-3 mb-6"><button id="toggleData" class="control-btn">切换显示数据</button><button id="toggleType" class="control-btn">切换图表类型</button><button id="resetZoom4" class="control-btn">重置缩放</button><div class="ml-auto"><label class="inline-flex items-center mr-4"><input type="checkbox" id="showMean" checked class="form-checkbox h-5 w-5 text-primary"><span class="ml-2">显示平均准确率</span></label><label class="inline-flex items-center"><input type="checkbox" id="showStd" checked class="form-checkbox h-5 w-5 text-primary"><span class="ml-2">显示标准差</span></label></div></div>
+                <div class="chart-container"><canvas id="accuracyChart"></canvas></div>
+            </div>
+            
+            <div id="a3-page5" class="a3-page-content hidden">
+                <h2 class="text-xl font-semibold text-primary mb-2">Probability Density Distribution</h2>
+                <p class="text-neutral mb-2">Showing probability density distributions of p(x, y=0)*v(x) and p(x, y=1)*v(x)</p>
+                <div class="flex items-center gap-4 mb-6">
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 transition-colors"><i class="fa fa-moon-o text-xl"></i></button>
+                    <button id="reset-zoom5" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"><i class="fa fa-refresh"></i><span>Reset View</span></button>
+                </div>
+                <div class="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6 transition-all duration-300 hover:shadow-lg">
+                    <div class="chart-container"><canvas id="densityChart"></canvas><div id="infoBox5" class="info-box"></div></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-md p-4 md:p-6 transition-all duration-300">
+                    <h3 class="text-lg font-semibold mb-4">Legend Explanation</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <div id="legend-0" class="legend-item mb-3"><div class="legend-color w-4 h-4 rounded-sm bg-secondary"></div><span>p(x, y=0)*v(x)</span></div>
+                            <div id="legend-1" class="legend-item"><div class="legend-color w-4 h-4 rounded-sm bg-primary"></div><span>p(x, y=1)*v(x)</span></div>
+                        </div>
+                        <ul class="list-disc pl-5 text-neutral space-y-1 text-sm">
+                            <li>Yellow curve represents p(x, y=0)*v(x)</li>
+                            <li>Blue curve represents p(x, y=1)*v(x)</li>
+                            <li>Gray shaded area indicates the overlapping part of the two distributions</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="page-a4" class="page-content bg-white rounded-lg shadow-lg p-6 max-w-5xl w-full mx-auto">
+            <h1 class="text-2xl font-bold text-center mb-4 text-gray-800">Assignment 4: Model Performance Line Chart (D3.js)</h1>
+            <p class="text-center text-gray-600 mb-6">Interactive Line Chart for Standard Accuracy / Certified Robustness Rate / Certified Robust Accuracy.</p>
+            
+            <div class="controls flex flex-wrap justify-center gap-4 mb-6 p-4 bg-gray-100 rounded-lg">
+                <div class="metric-group flex items-center gap-2">
+                    <span class="control-label text-gray-800 font-semibold">Metric:</span>
+                    <button class="metric-btn px-3 py-1 rounded-md text-sm font-medium transition-colors bg-primary text-white" data-metric="Std Acc">Standard Accuracy</button>
+                    <button class="metric-btn px-3 py-1 rounded-md text-sm font-medium transition-colors bg-gray-600 text-white hover:bg-gray-700" data-metric="CRR">Certified Robustness Rate</button>
+                    <button class="metric-btn px-3 py-1 rounded-md text-sm font-medium transition-colors bg-gray-600 text-white hover:bg-gray-700" data-metric="CRA">Certified Robust Accuracy</button>
+                </div>
+                <div class="zoom-group">
+                    <button id="reset-zoom-a4" class="px-3 py-1 rounded-md text-sm font-medium bg-secondary text-white hover:bg-secondary/80">Reset Zoom/Pan</button>
+                </div>
+            </div>
+            
+            <div class="chart-container-a4 relative bg-gray-50 p-4 rounded-lg shadow-inner">
+                <div class="zoom-hint absolute top-2 right-2 text-xs text-gray-600 bg-white/80 p-1 rounded">Zoom: Mouse Wheel | Pan: Drag</div>
+                <div class="d3-chart-svg"></div>
+                <div class="d3-tooltip"></div>
+            </div>
+            
+            <div class="d3-legend"></div>
+        </div>
+    </main>
+
+    <script>
+        // --- 核心 JS 逻辑区域 ---
+
+        let d3ChartInitialized = false;
+
+        // ==============================================
+        // 1. A1: PSI Readings Logic
+        //    ***请将 assignment1.txt 中 <script> 标签内的所有内容粘贴到此函数中***
+        //    请勿粘贴 <script> 标签本身，只粘贴函数定义和全局变量。
+        // ==============================================
+        function initPageA1() {
+            // --- PASTE ASSIGNMENT 1 JAVASCRIPT HERE ---
+            // Refresh interval set to 1 hour (3600000 ms) - matches Singapore's official PSI update frequency
+            const REFRESH_INTERVAL = 3600000;
+            let refreshTimer = null;
+
+            // English descriptions for reading types (aligned with Singapore's NEA terms)
+            const readingTypeLabels = {
+                "o3_sub_index": "Ozone Sub-Index",
+                "pm10_twenty_four_hourly": "PM10 24-Hour Average",
+                "pm10_sub_index": "PM10 Sub-Index",
+                "co_sub_index": "Carbon Monoxide Sub-Index",
+                "pm25_twenty_four_hourly": "PM2.5 24-Hour Average",
+                "so2_sub_index": "Sulfur Dioxide Sub-Index",
+                "co_eight_hour_max": "Carbon Monoxide 8-Hour Max",
+                "no2_one_hour_max": "Nitrogen Dioxide 1-Hour Max",
+                "so2_twenty_four_hourly": "Sulfur Dioxide 24-Hour Average",
+                "pm25_sub_index": "PM2.5 Sub-Index",
+                "psi_twenty_four_hourly": "24-Hour PSI",
+                "o3_eight_hour_max": "Ozone 8-Hour Max"
+            };
+
+            // Get status class based on PSI value
+            function getStatusClass(value) {
+                if (value <= 50) return "status-good";
+                if (value <= 100) return "status-moderate";
+                return "status-unhealthy";
+            }
+
+            // Get status text based on PSI value
+            function getStatusText(value) {
+                if (value <= 50) return "Good";
+                if (value <= 100) return "Moderate";
+                return "Unhealthy";
+            }
+
+            // Format time to Singapore timezone (24-hour format, consistent with NEA's display)
+            function formatTime(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleString('en-SG', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            }
+
+            // Update next refresh time display
+            function updateNextRefreshTime() {
+                const nextTime = new Date(Date.now() + REFRESH_INTERVAL);
+                document.getElementById('nextRefreshTime').textContent = formatTime(nextTime);
+            }
+
+            // Render table with latest PSI data
+            function renderTable(data) {
+                // Update last updated time with API's timestamp
+                const updateTime = data.items[0].update_timestamp;
+                document.getElementById('updateTime').textContent = formatTime(updateTime);
+                // Update next refresh time
+                updateNextRefreshTime();
+                const readings = data.items[0].readings;
+                const tableBody = document.querySelector('#psiTable tbody');
+                const readingTypes = Object.keys(readings);
+                const regions = ["west", "east", "central", "south", "north"];
+
+                // Clear existing table content before inserting new data
+                tableBody.innerHTML = '';
+                // Insert each reading type as a row with region values
+                readingTypes.forEach(type => {
+                    const row = document.createElement('tr');
+                    let rowHtml = `
+                        <td class="data-label">${type}</td>
+                        <td>${readingTypeLabels[type] || '-'}</td>
+                    `;
+                    
+                    // Add value and status badge for each region
+                    regions.forEach(region => {
+                        const value = readings[type][region];
+                        const statusClass = getStatusClass(value);
+                        const statusText = getStatusText(value);
+                        
+                        rowHtml += `
+                            <td>
+                                ${value} 
+                                <span class="status ${statusClass}">${statusText}</span>
+                            </td>
+                        `;
+                    });
+                    
+                    row.innerHTML = rowHtml;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            // Fetch data from Singapore's open data API and render
+            function fetchAndRenderData() {
+                fetch('https://api.data.gov.sg/v1/environment/psi')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Network Error: ${response.status} (${response.statusText})`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        renderTable(data);
+                    })
+                    .catch(error => {
+                        console.error('Failed to fetch PSI data:', error);
+                        const tableBody = document.querySelector('#psiTable tbody');
+                        tableBody.innerHTML = `<tr><td colspan="7">Failed to load data: ${error.message}. Will retry in 1 hour.</td></tr>`;
+                        // Update next refresh time even if fetch fails
+                        updateNextRefreshTime();
+                    });
+            }
+
+            // Initialize: First data load + start auto-refresh timer
+            function init() {
+                fetchAndRenderData();
+                refreshTimer = setInterval(fetchAndRenderData, REFRESH_INTERVAL);
+            }
+
+            // Ensure timer is only started once globally
+            if (!window.psiRefreshTimer) {
+                init();
+                window.psiRefreshTimer = refreshTimer; // Store timer globally for cleanup
+            }
+        }
+
+        // ==============================================
+        // 2. A3: Interactive Suite Logic
+        //    ***请将 assignment3.txt 中所有功能函数 (initPage1, initPage2, initPage3, initPage4, initPage5) 的内容粘贴到此处***
+        //    同时粘贴 initPageA3Navigation() 函数。
+        // ==============================================
+        function initPageA3Navigation() {
+            // A3 Sub-Navigation logic (copied from A3)
+            const navButtonsA3 = document.querySelectorAll('.nav-btn-a3');
+            const pageContentsA3 = document.querySelectorAll('.a3-page-content');
+            
+            navButtonsA3.forEach(button => {
+                button.addEventListener('click', function() {
+                    const pageId = this.getAttribute('data-page');
+                    
+                    navButtonsA3.forEach(btn => btn.classList.remove('bg-primary', 'text-white'));
+                    this.classList.add('bg-primary', 'text-white');
+                    
+                    pageContentsA3.forEach(page => {
+                        page.classList.remove('active');
+                        page.classList.add('hidden');
+                    });
+                    document.getElementById(pageId).classList.remove('hidden');
+                    document.getElementById(pageId).classList.add('active');
+
+                    // Run the specific init function
+                    if (pageId === 'a3-page1') initPage1();
+                    if (pageId === 'a3-page2') initPage2();
+                    if (pageId === 'a3-page3') initPage3();
+                    if (pageId === 'a3-page4') initPage4();
+                    if (pageId === 'a3-page5') initPage5();
+                });
+            });
+
+            // Set initial active state
+            navButtonsA3[0].classList.add('bg-primary', 'text-white');
+            document.querySelector('#a3-page1').classList.remove('hidden');
+            document.querySelector('#a3-page1').classList.add('active');
+            
+            // Run init for the default active A3 page and pre-run Chart.js initializations
+            initPage1();
+            initPage4(); 
+            initPage5(); 
+            initPage2();
+            initPage3();
+        }
+
+        // --- PASTE ASSIGNMENT 3 FUNCTIONS (initPage1 to initPage5) HERE ---
+
+        // Page 1: Vector Diagram functionality
+        function initPage1() { 
+            // Get elements
+            const vectorLabels = document.querySelectorAll('#a3-page1 .vector-label');
+            const vectorArrows = document.querySelectorAll('#a3-page1 .vector-arrow.draggable');
+            const vectorSvg = document.getElementById('vector-svg');
+            const resetBtn = document.getElementById('reset-btn');
+            const zoomInBtn = document.getElementById('zoom-in');
+            const zoomOutBtn = document.getElementById('zoom-out');
+            const showCoordsBtn = document.getElementById('show-coords');
+            const vectorInfo = document.getElementById('vector-info');
+            
+            // Vector data - store start and end points of each vector
+            const vectorData = {
+                e1a: { start: { x: 150, y: 100 }, end: { x: 400, y: 100 } },
+                e2a: { start: { x: 150, y: 100 }, end: { x: 50, y: 300 } },
+                e1b: { start: { x: 50, y: 300 }, end: { x: 300, y: 300 } },
+                e2b: { start: { x: 300, y: 300 }, end: { x: 400, y: 100 } }
+            };
+            // Zoom-related variables
+            let currentScale = 1;
+            const scaleStep = 0.1;
+            const minScale = 0.5;
+            const maxScale = 1.5;
+            // Coordinate display state
+            let showingCoords = false;
+            // Add hover effects to each label
+            vectorLabels.forEach(label => {
+                // Hover effect
+                label.addEventListener('mouseenter', () => {
+                    const vectorId = label.dataset.vector;
+                    
+                    highlightVector(vectorId, true);
+                    if (showingCoords) {
+                        showVectorInfo(vectorId);
+                    }
+                });
+                
+                label.addEventListener('mouseleave', () => {
+                    const vectorId = label.dataset.vector;
+                    // Only remove highlight if not selected
+                    if (!label.classList.contains('selected')) {
+                        highlightVector(vectorId, false);
+                        if (showingCoords) {
+                            vectorInfo.classList.add('hidden');
+                        }
+                    }
+                });
+                
+                // Click to toggle selection state
+                label.addEventListener('click', () => {
+                    const vectorId = label.dataset.vector;
+                    label.classList.toggle('selected');
+                    label.classList.toggle('text-yellow-600');
+                    label.classList.toggle('scale-110');
+                    label.classList.toggle('font-extrabold');
+                    if (label.classList.contains('selected')) {
+                        highlightVector(vectorId, true);
+                        if (showingCoords) {
+                            showVectorInfo(vectorId);
+                        }
+                    } else {
+                        highlightVector(vectorId, false);
+                        if (showingCoords) {
+                            vectorInfo.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+            
+            // Highlight a vector by ID
+            function highlightVector(vectorId, highlight) {
+                const line = document.querySelector(`#a3-page1 .vector-line.${vectorId}`);
+                const arrow = document.querySelector(`#a3-page1 .vector-arrow[data-vector="${vectorId}"]`);
+                
+                if (highlight) {
+                    line.setAttribute('stroke-width', '5');
+                    arrow.setAttribute('stroke', '#000');
+                    arrow.setAttribute('stroke-width', '1');
+                } else {
+                    line.setAttribute('stroke-width', '3');
+                    arrow.setAttribute('stroke', 'none');
+                    arrow.setAttribute('stroke-width', '0');
+                }
+            }
+            
+            // Show vector information
+            function showVectorInfo(vectorId) {
+                const vector = vectorData[vectorId];
+                const dx = vector.end.x - vector.start.x;
+                const dy = vector.end.y - vector.start.y;
+                const length = Math.sqrt(dx * dx + dy * dy).toFixed(1);
+                vectorInfo.innerHTML = `
+                    <strong>${vectorId}:</strong><br>
+                    Start: (${vector.start.x}, ${vector.start.y})<br>
+                    End: (${vector.end.x.toFixed(0)}, ${vector.end.y.toFixed(0)})<br>
+                    Components: (${dx.toFixed(0)}, ${dy.toFixed(0)})<br>
+                    Length: ${length}
+                `;
+                vectorInfo.classList.remove('hidden');
+            }
+            
+            // Zoom functionality
+            zoomInBtn.addEventListener('click', () => {
+                if (currentScale < maxScale) {
+                    currentScale += scaleStep;
+                    applyScale();
+                }
+            });
+            zoomOutBtn.addEventListener('click', () => {
+                if (currentScale > minScale) {
+                    currentScale -= scaleStep;
+                    applyScale();
+                }
+            });
+            function applyScale() {
+                vectorSvg.style.transform = `scale(${currentScale})`;
+                vectorSvg.style.transformOrigin = 'center';
+            }
+            
+            // Show/hide coordinate information
+            showCoordsBtn.addEventListener('click', () => {
+                showingCoords = !showingCoords;
+                showCoordsBtn.innerHTML = showingCoords ? 
+                    '<i class="fa fa-crosshairs mr-1"></i> Hide Coordinates' : 
+                    '<i class="fa fa-crosshairs mr-1"></i> Show Coordinates';
+                
+                if (!showingCoords) {
+                    vectorInfo.classList.add('hidden');
+                } else {
+                    // Check if there's a selected vector
+                    const selectedLabel = document.querySelector('#a3-page1 .vector-label.selected');
+                    if (selectedLabel) {
+                        showVectorInfo(selectedLabel.dataset.vector);
+                    }
+                }
+            });
+            // Reset button functionality
+            resetBtn.addEventListener('click', () => {
+                // Reset vector data
+                vectorData.e1a = { start: { x: 150, y: 100 }, end: { x: 400, y: 100 } };
+                vectorData.e2a = { start: { x: 150, y: 100 }, end: { x: 50, y: 300 } };
+                vectorData.e1b = { start: { x: 50, y: 300 }, end: { x: 300, y: 300 } };
+                vectorData.e2b = { start: { x: 300, y: 300 }, end: { x: 400, y: 100 } };
+                
+                // Update all vectors
+                Object.keys(vectorData).forEach(updateVector);
+                
+                // Update parallelogram
+                updateParallelogram();
+                
+                // Reset highlight and selection states
+                vectorLabels.forEach(label => {
+                    label.classList.remove('selected', 'text-yellow-600', 'scale-110', 'font-extrabold');
+                    highlightVector(label.dataset.vector, false);
+                });
+                // Reset zoom
+                currentScale = 1;
+                applyScale();
+                
+                // Reset coordinate display
+                showingCoords = false;
+                showCoordsBtn.innerHTML = '<i class="fa fa-crosshairs mr-1"></i> Show Coordinates';
+                vectorInfo.classList.add('hidden');
+            });
+            // Update vector position
+            function updateVector(vectorId) {
+                const vector = vectorData[vectorId];
+                const line = document.querySelector(`#a3-page1 .vector-line.${vectorId}`);
+                
+                if (line) {
+                    line.setAttribute('d', `M${vector.start.x},${vector.start.y} L${vector.end.x},${vector.end.y}`);
+                    // Update arrow position
+                    const arrow = document.querySelector(`#a3-page1 .vector-arrow[data-vector="${vectorId}"]`);
+                    if (arrow) {
+                        // Arrow position update logic (re-calculating position based on vector end point)
+                    }
+                }
+            }
+            
+            // Update parallelogram
+            function updateParallelogram() {
+                // Update parallelogram edges based on vectors
+                const e1aEnd = vectorData.e1a.end;
+                const e2aEnd = vectorData.e2a.end;
+                const e1bEnd = vectorData.e1b.end;
+                
+                const parallelogram = document.querySelector('#a3-page1 .vector-line:not([class*="diagonal"]):not([class*="e1a"]):not([class*="e2a"]):not([class*="e1b"]):not([class*="e2b"])');
+                if (parallelogram) {
+                    parallelogram.setAttribute('d', `M${vectorData.e1a.start.x},${vectorData.e1a.start.y} L${e1aEnd.x},${e1aEnd.y} L${e1bEnd.x},${e1bEnd.y} L${e2aEnd.x},${e2aEnd.y} Z`);
+                }
+                
+                // Update diagonals
+                const diagonal1 = document.querySelector('#a3-page1 .vector-line.diagonal-1');
+                if (diagonal1) {
+                    diagonal1.setAttribute('d', `M${vectorData.e1a.start.x},${vectorData.e1a.start.y} L${e1bEnd.x},${e1bEnd.y}`);
+                }
+                
+                const diagonal2 = document.querySelector('#a3-page1 .vector-line.diagonal-2');
+                if (diagonal2) {
+                    diagonal2.setAttribute('d', `M${e1aEnd.x},${e1aEnd.y} L${e2aEnd.x},${e2aEnd.y}`);
+                }
+            }
+            
+            // Make vectors draggable
+            let selectedElement = null;
+            let offset = { x: 0, y: 0 };
+            
+            vectorArrows.forEach(arrow => {
+                arrow.addEventListener('mousedown', startDrag);
+                arrow.addEventListener('touchstart', startDrag, { passive: true });
+            });
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag, { passive: true });
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+            function startDrag(evt) {
+                evt.preventDefault();
+                selectedElement = this;
+                
+                const vectorId = this.dataset.vector;
+                const vector = vectorData[vectorId];
+                // Calculate offset based on mouse/touch position
+                if (evt.type === 'mousedown') {
+                    const svgPoint = getSVGPoint(evt.clientX, evt.clientY);
+                    offset.x = svgPoint.x - vector.end.x;
+                    offset.y = svgPoint.y - vector.end.y;
+                } else { // touchstart
+                    const touch = evt.touches[0];
+                    const svgPoint = getSVGPoint(touch.clientX, touch.clientY);
+                    offset.x = svgPoint.x - vector.end.x;
+                    offset.y = svgPoint.y - vector.end.y;
+                }
+            }
+            
+            function drag(evt) {
+                if (selectedElement) {
+                    evt.preventDefault();
+                    const vectorId = selectedElement.dataset.vector;
+                    const vector = vectorData[vectorId];
+                    
+                    let svgPoint;
+                    if (evt.type === 'mousemove') {
+                        svgPoint = getSVGPoint(evt.clientX, evt.clientY);
+                    } else { // touchmove
+                        const touch = evt.touches[0];
+                        svgPoint = getSVGPoint(touch.clientX, touch.clientY);
+                    }
+                    
+                    // Update end point based on drag
+                    vector.end.x = svgPoint.x - offset.x;
+                    vector.end.y = svgPoint.y - offset.y;
+                    
+                    // Update dependent vectors
+                    if (vectorId === 'e1a') {
+                        // e2b's end point depends on e1a's end point
+                        vectorData.e2b.end.x = vector.end.x;
+                        vectorData.e2b.end.y = vector.end.y;
+                    } else if (vectorId === 'e2a') {
+                        // e1b's start point depends on e2a's end point
+                        vectorData.e1b.start.x = vector.end.x;
+                        vectorData.e1b.start.y = vector.end.y;
+                    } else if (vectorId === 'e1b') {
+                        // e2b's start point depends on e1b's end point
+                        vectorData.e2b.start.x = vector.end.x;
+                        vectorData.e2b.start.y = vector.end.y;
+                    }
+                    
+                    // Update all vectors and the parallelogram
+                    Object.keys(vectorData).forEach(updateVector);
+                    updateParallelogram();
+                    
+                    // Update coordinate info if showing
+                    if (showingCoords) {
+                        showVectorInfo(vectorId);
+                    }
+                }
+            }
+            
+            function endDrag() {
+                selectedElement = null;
+            }
+            
+            // Helper to convert client coordinates to SVG coordinates
+            function getSVGPoint(clientX, clientY) {
+                const pt = vectorSvg.createSVGPoint();
+                pt.x = clientX;
+                pt.y = clientY;
+                return pt.matrixTransform(vectorSvg.getScreenCTM().inverse());
+            }
+        }
+        
+        // Page 2: Interactive Charts functionality
+        function initPage2() {
+            // 左侧图表交互
+            const leftChart = document.querySelector('#a3-page2 svg:first-of-type');
+            const tooltip1 = document.getElementById('tooltip1');
+            const tooltipText1 = document.getElementById('tooltip-text1');
+            
+            if (!leftChart) return;
+
+            // 为左侧图表元素添加交互
+            leftChart.querySelectorAll('.data-point').forEach(element => {
+                element.addEventListener('mouseenter', (e) => {
+                    const pt = leftChart.createSVGPoint();
+                    pt.x = e.clientX;
+                    pt.y = e.clientY;
+                    const svgPoint = pt.matrixTransform(leftChart.getScreenCTM().inverse());
+                    
+                    let text = '';
+                    if (element.tagName === 'rect' && element.getAttribute('fill') !== 'none') {
+                        text = element.getAttribute('height') > 50 ? 'High Probability' : 'Low Probability';
+                    } else if (element.getAttribute('stroke-dasharray') === '4,2') {
+                        text = 'Projected Area';
+                    }
+                    
+                    tooltip1.setAttribute('x', svgPoint.x + 10);
+                    tooltip1.setAttribute('y', svgPoint.y - 10);
+                    tooltipText1.setAttribute('x', svgPoint.x + 15);
+                    tooltipText1.setAttribute('y', svgPoint.y - 2);
+                    tooltipText1.textContent = text;
+                    
+                    tooltip1.style.opacity = '1';
+                    tooltipText1.style.opacity = '1';
+                    element.style.opacity = '1';
+                    element.style.stroke = '#7C3AED';
+                    element.style.strokeWidth = '2';
+                });
+                
+                element.addEventListener('mouseleave', () => {
+                    tooltip1.style.opacity = '0';
+                    tooltipText1.style.opacity = '0';
+                    element.style.opacity = '';
+                    element.style.stroke = '';
+                    element.style.strokeWidth = '';
+                });
+            });
+            
+            // 右侧图表交互
+            const rightChart = document.querySelector('#a3-page2 svg:last-of-type');
+            const tooltip2 = document.getElementById('tooltip2');
+            const tooltipText2 = document.getElementById('tooltip-text2');
+            
+            if (!rightChart) return;
+
+            rightChart.querySelectorAll('.data-point').forEach((element, index) => {
+                element.addEventListener('mouseenter', (e) => {
+                    const pt = rightChart.createSVGPoint();
+                    pt.x = e.clientX;
+                    pt.y = e.clientY;
+                    const svgPoint = pt.matrixTransform(rightChart.getScreenCTM().inverse());
+                    
+                    const text = index === 0 ? 'Actual Position' : 'Predicted Position';
+                    
+                    tooltip2.setAttribute('x', svgPoint.x + 10);
+                    tooltip2.setAttribute('y', svgPoint.y - 10);
+                    tooltipText2.setAttribute('x', svgPoint.x + 15);
+                    tooltipText2.setAttribute('y', svgPoint.y - 2);
+                    tooltipText2.textContent = text;
+                    
+                    tooltip2.style.opacity = '1';
+                    tooltipText2.style.opacity = '1';
+                    element.style.opacity = '1';
+                    element.style.stroke = '#10B981';
+                    element.style.strokeWidth = index === 0 ? '3.5' : '2.5';
+                });
+                
+                element.addEventListener('mouseleave', () => {
+                    tooltip2.style.opacity = '0';
+                    tooltipText2.style.opacity = '0';
+                    element.style.opacity = '';
+                    element.style.stroke = '';
+                    element.style.strokeWidth = index === 0 ? '2.5' : '2';
+                });
+            });
+        }
+        
+        // Page 3: Venn Diagram functionality
+        function initPage3() {
+            // 获取所有可交互区域
+            const sections = document.querySelectorAll('#a3-page3 .section');
+            const infoPanel = document.getElementById('infoPanel');
+            const panelTitle = document.getElementById('panelTitle');
+            const panelDescription = document.getElementById('panelDescription');
+            const selectionCount = document.getElementById('selectionCount');
+            const resetBtn = document.getElementById('resetBtn');
+            
+            if (sections.length === 0) return;
+
+            // 加载保存的状态
+            function loadSavedState() {
+                const savedState = localStorage.getItem('vennDiagramState');
+                if (savedState) {
+                    const selectedAreas = JSON.parse(savedState);
+                    sections.forEach(section => {
+                        if (selectedAreas.includes(section.dataset.area)) {
+                            section.classList.add('selected');
+                        }
+                    });
+                    updateSelectionCount();
+                }
+            }
+            
+            // 保存当前状态
+            function saveCurrentState() {
+                const selectedAreas = Array.from(sections)
+                    .filter(section => section.classList.contains('selected'))
+                    .map(section => section.dataset.area);
+                localStorage.setItem('vennDiagramState', JSON.stringify(selectedAreas));
+            }
+            
+            // 更新选中计数
+            function updateSelectionCount() {
+                const count = document.querySelectorAll('#a3-page3 .section.selected').length;
+                if (selectionCount) selectionCount.textContent = `已选中: ${count} 个区域`;
+            }
+            
+            // 显示区域信息
+            function showAreaInfo(section) {
+                if (panelTitle && panelDescription) {
+                    panelTitle.textContent = section.dataset.area.charAt(0).toUpperCase() + section.dataset.area.slice(1);
+                    panelDescription.textContent = section.dataset.description;
+                    if (infoPanel) infoPanel.classList.add('active');
+                }
+            }
+            
+            // 为每个区域添加交互效果
+            sections.forEach(section => {
+                // 点击选中/取消选中
+                section.addEventListener('click', () => {
+                    section.classList.toggle('selected');
+                    updateSelectionCount();
+                    saveCurrentState();
+                    
+                    // 添加点击动画
+                    section.classList.add('scale');
+                    setTimeout(() => {
+                        section.classList.remove('scale');
+                    }, 200);
+                });
+                
+                // 鼠标悬停效果（未选中状态下）
+                section.addEventListener('mouseenter', () => {
+                    if (!section.classList.contains('selected')) {
+                        section.style.stroke = '#666';
+                        section.style.strokeWidth = '2';
+                    }
+                    // 显示信息面板
+                    showAreaInfo(section);
+                });
+                
+                // 鼠标离开恢复
+                section.addEventListener('mouseleave', () => {
+                    if (!section.classList.contains('selected')) {
+                        section.style.stroke = 'none';
+                        section.style.strokeWidth = '0';
+                    }
+                });
+            });
+            
+            // 重置按钮功能
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    sections.forEach(section => {
+                        section.classList.remove('selected');
+                        section.style.stroke = 'none';
+                        section.style.strokeWidth = '0';
+                    });
+                    updateSelectionCount();
+                    localStorage.removeItem('vennDiagramState');
+                });
+            }
+            
+            // 初始加载
+            loadSavedState();
+        }
+        
+        // Page 4: Validation Chart functionality
+        let accuracyChart; // Global reference for Chart.js instance
+        function initPage4() {
+            // Check if chart already exists and destroy it to prevent conflicts
+            if (accuracyChart) {
+                accuracyChart.destroy();
+            }
+
+            // 模拟交叉验证数据
+            const cvData = {
+                models: ['BERT', 'RoBERTa', 'BART'],
+                meanAccuracy: [85.2, 87.6, 84.1],
+                stdDeviation: [2.3, 1.8, 2.7]
+            };
+            
+            // 创建图表
+            const ctx = document.getElementById('accuracyChart');
+            if (!ctx) return;
+            const ctx2D = ctx.getContext('2d');
+            
+            accuracyChart = new Chart(ctx2D, {
+                type: 'bar',
+                data: {
+                    labels: cvData.models,
+                    datasets: [
+                        {
+                            label: 'Mean Accuracy (%)',
+                            data: cvData.meanAccuracy,
+                            backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                            borderColor: 'rgba(245, 158, 11, 1)',
+                            borderWidth: 2,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Standard Deviation',
+                            data: cvData.stdDeviation,
+                            backgroundColor: 'rgba(245, 158, 11, 0.3)',
+                            borderColor: 'rgba(245, 158, 11, 0.7)',
+                            borderWidth: 2,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    // 添加缩放和平移功能
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Cross Validation Accuracy (%)',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                bottom: 20
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}%`;
+                                }
+                            }
+                        },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'xy'
+                            },
+                            zoom: {
+                                enabled: true,
+                                mode: 'xy'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Mean Accuracy (%)'
+                            },
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Standard Deviation'
+                            },
+                            beginAtZero: true,
+                            max: 10,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 切换数据显示按钮
+            document.getElementById('toggleData').addEventListener('click', function() {
+                accuracyChart.data.datasets.forEach(dataset => {
+                    dataset.hidden = !dataset.hidden;
+                });
+                accuracyChart.update();
+            });
+            // 切换图表类型按钮
+            document.getElementById('toggleType').addEventListener('click', function() {
+                const newType = accuracyChart.config.type === 'bar' ? 'line' : 'bar';
+                accuracyChart.config.type = newType;
+                
+                // 调整线条图表的样式
+                if (newType === 'line') {
+                    accuracyChart.data.datasets.forEach(dataset => {
+                        dataset.fill = false;
+                        dataset.tension = 0.3;
+                        dataset.pointRadius = 6;
+                        dataset.pointHoverRadius = 8;
+                    });
+                } else {
+                    // 恢复柱状图样式
+                    accuracyChart.data.datasets.forEach((dataset, index) => {
+                        dataset.fill = true;
+                        dataset.tension = 0;
+                        dataset.pointRadius = 0;
+                        dataset.backgroundColor = index === 0 ? 'rgba(245, 158, 11, 0.8)' : 'rgba(245, 158, 11, 0.3)';
+                    });
+                }
+                
+                accuracyChart.update();
+            });
+            
+            // 重置缩放按钮
+            document.getElementById('resetZoom4').addEventListener('click', function() {
+                accuracyChart.resetZoom();
+            });
+            // 复选框控制数据显示
+            document.getElementById('showMean').addEventListener('change', function(e) {
+                accuracyChart.data.datasets[0].hidden = !e.target.checked;
+                accuracyChart.update();
+            });
+            document.getElementById('showStd').addEventListener('change', function(e) {
+                accuracyChart.data.datasets[1].hidden = !e.target.checked;
+                accuracyChart.update();
+            });
+        }
+        
+        // Page 5: Density Distribution functionality
+        let densityChart; // Global reference for Chart.js instance
+        function initPage5() {
+            // Check if chart already exists and destroy it to prevent conflicts
+            if (densityChart) {
+                densityChart.destroy();
+            }
+
+            // Generate sample data
+            function generateData() {
+                const data = {
+                    x: Array.from({length: 100}, (_, i) => i / 99),
+                    y0: [],
+                    y1: []
+                };
+                // Generate two overlapping normal distributions
+                data.x.forEach(x => {
+                    // First distribution - p(x, y=0)*v(x)
+                    const y0 = 3 * Math.exp(-Math.pow(x - 0.3, 2) / (2 * Math.pow(0.2, 2))) + 
+                               0.5 * Math.random();
+                    data.y0.push(y0);
+                    
+                    // Second distribution - p(x, y=1)*v(x)
+                    const y1 = 3 * Math.exp(-Math.pow(x - 0.7, 2) / (2 * Math.pow(0.2, 2))) + 
+                               0.5 * Math.random();
+                    data.y1.push(y1);
+                });
+                return data;
+            }
+            
+            const data = generateData();
+            // Create gradient for overlapping area
+            const ctx = document.getElementById('densityChart');
+            if (!ctx) return;
+            const ctx2D = ctx.getContext('2d');
+
+            const overlapGradient = ctx2D.createLinearGradient(0, 0, 0, 400);
+            overlapGradient.addColorStop(0, 'rgba(156, 163, 175, 0.8)');
+            overlapGradient.addColorStop(1, 'rgba(156, 163, 175, 0.1)');
+            
+            // Initialize chart
+            function initDensityChart() {
+                return new Chart(ctx2D, {
+                    type: 'line',
+                    data: {
+                        labels: data.x,
+                        datasets: [
+                            {
+                                label: 'p(x, y=0)*v(x)',
+                                borderColor: '#F59E0B',
+                                data: data.y0,
+                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                pointHoverBackgroundColor: '#F59E0B',
+                                pointHoverBorderColor: '#fff',
+                                pointHoverBorderWidth: 2,
+                                indexAxis: 'x',
+                            },
+                            {
+                                label: 'p(x, y=1)*v(x)',
+                                borderColor: '#3B82F6',
+                                data: data.y1,
+                                backgroundColor: overlapGradient,
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                pointHoverBackgroundColor: '#3B82F6',
+                                pointHoverBorderColor: '#fff',
+                                pointHoverBorderWidth: 2,
+                                indexAxis: 'x',
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                onHover: function(e, elements) {
+                                    const infoBox = document.getElementById('infoBox5');
+                                    if (elements.length) {
+                                        const element = elements[0];
+                                        const datasetIndex = element.datasetIndex;
+                                        const index = element.index;
+                                        const value = this.data.datasets[datasetIndex].data[index].toFixed(4);
+                                        const xValue = this.data.labels[index].toFixed(4);
+                                        infoBox.innerHTML = `
+                                            <strong>${this.data.datasets[datasetIndex].label}</strong><br>
+                                            x: ${xValue}<br>
+                                            Value: ${value}
+                                        `;
+                                        // Position the info box near the mouse
+                                        const canvasPosition = this.canvas.getBoundingClientRect();
+                                        infoBox.style.left = (e.clientX - canvasPosition.left + 10) + 'px';
+                                        infoBox.style.top = (e.clientY - canvasPosition.top - 60) + 'px';
+                                        infoBox.style.opacity = '1';
+                                    } else {
+                                        document.getElementById('infoBox5').style.opacity = '0';
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'x'
+                                },
+                                zoom: {
+                                    enabled: true,
+                                    mode: 'x'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'x'
+                                },
+                                min: 0,
+                                max: 1
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Density'
+                                },
+                                min: 0
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Theme toggle functionality (requires HTML body/html tag to have dark class applied)
+            function setupThemeToggle() {
+                const themeToggle = document.getElementById('theme-toggle');
+                
+                // Toggle theme
+                themeToggle.addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                    // Re-initialize chart to adapt to theme changes
+                    densityChart.destroy();
+                    densityChart = initDensityChart();
+                });
+            }
+            
+            // Legend click handlers
+            document.getElementById('legend-0').addEventListener('click', () => {
+                densityChart.data.datasets[0].hidden = !densityChart.data.datasets[0].hidden;
+                densityChart.update();
+                document.getElementById('legend-0').classList.toggle('opacity-50', densityChart.data.datasets[0].hidden);
+            });
+            
+            document.getElementById('legend-1').addEventListener('click', () => {
+                densityChart.data.datasets[1].hidden = !densityChart.data.datasets[1].hidden;
+                densityChart.update();
+                document.getElementById('legend-1').classList.toggle('opacity-50', densityChart.data.datasets[1].hidden);
+            });
+            // Reset zoom button
+            document.getElementById('reset-zoom5').addEventListener('click', () => {
+                densityChart.resetZoom();
+            });
+
+            // Initialization
+            densityChart = initDensityChart();
+            setupThemeToggle();
+        }
+
+        // ==============================================
+        // 3. A4: D3 Line Chart Logic
+        //    ***请将 assignment4.txt 中 <script> 标签内的所有内容（除模型数据外）粘贴到此函数中***
+        //    将模型数据粘贴到函数起始位置。
+        // ==============================================
+        function initPageA4() {
+            if (d3ChartInitialized) return;
+
+            // --- PASTE ASSIGNMENT 4 MODEL DATA HERE ---
+            const modelData = {
+                "ERM": {
+                    "Std Acc": { "CIFAR100": 81.03, "CIFAR10": 94.85, "SVHN": 94.44, "MNIST": 99.37 },
+                    "CRR": { "CIFAR100": 9.28, "CIFAR10": 1.25, "SVHN": 52.72, "MNIST": 26.01 },
+                    "CRA": { "CIFAR100": 4.52, "CIFAR10": 1.25, "SVHN": 51.04, "MNIST": 24.96 }
+                },
+                "DA": {
+                    "Std Acc": { "CIFAR100": 78.27, "CIFAR10": 94.21, "SVHN": 94.69, "MNIST": 99.42 },
+                    "CRR": { "CIFAR100": 15.04, "CIFAR10": 81.08, "SVHN": 82.08, "MNIST": 85.23 },
+                    "CRA": { "CIFAR100": 6.15, "CIFAR10": 76.07, "SVHN": 82.01, "MNIST": 84.12 }
+                },
+                "PGDT": {
+                    "Std Acc": { "CIFAR100": 64.35, "CIFAR10": 84.38, "SVHN": 91.19, "MNIST": 99.16 },
+                    "CRR": { "CIFAR100": 57.07, "CIFAR10": 87.07, "SVHN": 87.89, "MNIST": 94.65 },
+                    "CRA": { "CIFAR100": 32.93, "CIFAR10": 82.9, "SVHN": 86.68, "MNIST": 94.63 }
+                },
+                "TRADES": {
+                    "Std Acc": { "CIFAR100": 62.55, "CIFAR10": 80.42, "SVHN": 86.16, "MNIST": 99.1 },
+                    "CRR": { "CIFAR100": 59.27, "CIFAR10": 88.54, "SVHN": 87.89, "MNIST": 94.76 },
+                    "CRA": { "CIFAR100": 38.85, "CIFAR10": 78.8, "SVHN": 84.76, "MNIST": 94.61 }
+                },
+                "MART": {
+                    "Std Acc": { "CIFAR100": 63.68, "CIFAR10": 81.54, "SVHN": 90.2, "MNIST": 98.94 },
+                    "CRR": { "CIFAR100": 58.79, "CIFAR10": 78.9, "SVHN": 85.23, "MNIST": 94.13 },
+                    "CRA": { "CIFAR100": 49.37, "CIFAR10": 72.21, "SVHN": 78.82, "MNIST": 94.09 }
+                },
+                "RS": {
+                    "Std Acc": { "CIFAR100": 56.87, "CIFAR10": 89.45, "SVHN": 88.35, "MNIST": 97.16 },
+                    "CRR": { "CIFAR100": 60.38, "CIFAR10": 90.0, "SVHN": 76.29, "MNIST": 87.15 },
+                    "CRA": { "CIFAR100": 47.5, "CIFAR10": 87.98, "SVHN": 70.64, "MNIST": 86.29 }
+                },
+                "IBP": {
+                    "Std Acc": { "CIFAR100": 39.45, "CIFAR10": 48.4, "SVHN": 73.09, "MNIST": 97.78 },
+                    "CRR": { "CIFAR100": 49.34, "CIFAR10": 54.7, "SVHN": 61.94, "MNIST": 89.18 },
+                    "CRA": { "CIFAR100": 29.2, "CIFAR10": 40.0, "SVHN": 57.26, "MNIST": 88.51 }
+                },
+                "PRL": {
+                    "Std Acc": { "CIFAR100": 64.89, "CIFAR10": 93.82, "SVHN": 92.0, "MNIST": 99.32 },
+                    "CRR": { "CIFAR100": 56.71, "CIFAR10": 90.71, "SVHN": 93.11, "MNIST": 96.03 },
+                    "CRA": { "CIFAR100": 50.77, "CIFAR10": 90.63, "SVHN": 91.07, "MNIST": 95.01 }
+                },
+                "TandT": {
+                    "Std Acc": { "CIFAR100": 65.56, "CIFAR10": 94.23, "SVHN": 94.79, "MNIST": 99.32 },
+                    "CRR": { "CIFAR100": 62.05, "CIFAR10": 95.08, "SVHN": 93.15, "MNIST": 97.8 },
+                    "CRA": { "CIFAR100": 52.07, "CIFAR10": 91.75, "SVHN": 92.81, "MNIST": 96.8 }
+                }
+            };
+
+            // 2. 全局配置与状态管理
+            const container = d3.select("#page-a4 .d3-chart-svg");
+            // 确保容器宽度正确计算
+            const containerWidth = container.node() ? container.node().getBoundingClientRect().width : 800;
+            const config = {
+                margin: { top: 50, right: 50, bottom: 80, left: 80 },
+                width: containerWidth - 130, // 容器宽度 - 左右边距
+                height: 500 - 130, // 容器高度 - 上下边距
+                datasets: ["CIFAR100", "CIFAR10", "SVHN", "MNIST"], // X轴数据集
+                models: Object.keys(modelData), // 所有模型（折线）
+                activeMetric: "Std Acc", // 当前激活的指标
+                activeModels: Object.keys(modelData).reduce((obj, model) => { // 模型激活状态（默认全部显示）
+                    obj[model] = true;
+                    return obj;
+                }, {}),
+                colors: d3.scaleOrdinal() // 模型颜色映射
+                    .domain(Object.keys(modelData))
+                    .range(d3.schemeCategory10)
+            };
+            // 3. 创建SVG与缩放容器（支持缩放平移）
+            const svg = container
+                .append("svg")
+                .attr("width", config.width + config.margin.left + config.margin.right)
+                .attr("height", config.height + config.margin.top + config.margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${config.margin.left},${config.margin.top})`);
+
+            const zoomContainer = svg.append("g").attr("class", "zoom-container"); // 新增：用于缩放平移的容器
+
+            // 4. 初始化缩放功能（参考摘要1、6的缩放平移实现）
+            let currentTransform = d3.zoomIdentity; // 保持缩放状态
+
+            const zoom = d3.zoom()
+                .scaleExtent([0.5, 10]) // 缩放范围：最小0.5倍，最大10倍
+                .translateExtent([[0, 0], [config.width, config.height]]) // 平移范围限制在图表内
+                .on("zoom", (event) => {
+                    currentTransform = event.transform;
+                    // 应用缩放变换到所有图表元素（轴线、网格、折线、数据点）
+                    gX.call(xAxis.scale(event.transform.rescaleX(xScale)));
+                    gY.call(yAxis.scale(event.transform.rescaleY(yScale)));
+                    
+                    lineGroup.selectAll(".model-line").attr("d", d => lineGenerator(event.transform.rescaleX(xScale), event.transform.rescaleY(yScale))(d.values));
+                    pointGroup.selectAll(".data-point").attr("cx", d => event.transform.rescaleX(xScale)(d.dataset)).attr("cy", d => event.transform.rescaleY(yScale)(d.value));
+                });
+            // 给SVG添加缩放监听
+            d3.select("#page-a4 .d3-chart-svg svg").call(zoom);
+
+            // 5. 创建X/Y轴比例尺与轴线
+            // X轴：离散数据集（分类比例尺）
+            const xScale = d3.scaleBand()
+                .domain(config.datasets)
+                .range([0, config.width])
+                .padding(0.1);
+            // Y轴：连续数值（0-100%，线性比例尺）
+            const yScale = d3.scaleLinear()
+                .domain([0, 100])
+                .range([config.height, 0]);
+            // X轴与Y轴生成器
+            const xAxis = d3.axisBottom(xScale);
+            const yAxis = d3.axisLeft(yScale).tickFormat(d => `${d}%`);
+            // 添加X轴（底部）
+            const gX = zoomContainer.append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(0,${config.height})`)
+                .call(xAxis)
+                .selectAll("text")
+                .attr("font-size", 12)
+                .attr("transform", "rotate(-45)") // 旋转标签避免重叠
+                .attr("text-anchor", "end");
+            // 添加Y轴（左侧）
+            const gY = zoomContainer.append("g")
+                .attr("class", "y-axis")
+                .call(yAxis)
+                .selectAll("text")
+                .attr("font-size", 12);
+
+            // 6. 添加轴标签与网格线
+            // X轴标签
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("x", config.width / 2)
+                .attr("y", config.height + config.margin.bottom - 20)
+                .text("Datasets")
+                .style("text-anchor", "middle")
+                .style("font-size", 14)
+                .style("font-weight", 500);
+            // Y轴标签
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("x", -config.height / 2)
+                .attr("y", -config.margin.left + 20)
+                .attr("transform", "rotate(-90)")
+                .text("Performance (%)")
+                .style("text-anchor", "middle")
+                .style("font-size", 14)
+                .style("font-weight", 500);
+            // 添加水平网格线（参考摘要3的网格配置）
+            zoomContainer.append("g")
+                .attr("class", "grid")
+                .selectAll("line")
+                .data(yScale.ticks(10)) // 生成10条网格线
+                .enter()
+                .append("line")
+                .attr("x1", 0)
+                .attr("x2", config.width)
+                .attr("y1", d => yScale(d))
+                .attr("y2", d => yScale(d))
+                .attr("stroke", "#e0e0e0")
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "3,3");
+            // 7. 创建折线生成器（核心：将模型数据转换为折线路径）
+            const lineGenerator = (xScale, yScale) => d3.line()
+                .x(d => xScale(d.dataset) + xScale.bandwidth() / 2) // X轴位置（数据集带宽中心）
+                .y(d => yScale(d.value)) // Y轴位置（指标数值）
+                .curve(d3.curveMonotoneX);
+            // 8. 初始化图表容器（折线与数据点分开分组，便于控制）
+            const lineGroup = zoomContainer.append("g").attr("class", "line-group");
+            const pointGroup = zoomContainer.append("g").attr("class", "point-group");
+            const tooltip = d3.select(".d3-tooltip"); // 工具提示
+
+            // 9. 核心函数：更新图表（支持指标切换、模型显隐、缩放后重绘）
+            function updateChart() {
+                const currentXScale = currentTransform.rescaleX(xScale);
+                const currentYScale = currentTransform.rescaleY(yScale);
+
+                // 9.1 处理数据：将模型-指标数据转换为折线所需格式
+                const processedData = config.models
+                    .filter(model => config.activeModels[model]) // 只保留激活的模型
+                    .map(model => ({
+                        model,
+                        values: config.datasets.map(dataset => ({
+                            dataset,
+                            value: modelData[model][config.activeMetric][dataset],
+                            model // 携带模型信息，用于tooltip
+                        }))
+                    }));
+
+                // 9.2 数据绑定：折线元素
+                const lines = lineGroup.selectAll(".model-line")
+                    .data(processedData, d => d.model);
+
+                // 9.3 移除已隐藏的折线（exit阶段）
+                lines.exit()
+                    .transition()
+                    .duration(500)
+                    .attr("opacity", 0)
+                    .remove();
+
+                // 9.4 添加新折线（enter阶段）
+                const newLines = lines.enter()
+                    .append("path")
+                    .attr("class", "model-line")
+                    .attr("stroke", d => config.colors(d.model))
+                    .attr("stroke-width", 2.5)
+                    .attr("fill", "none")
+                    .attr("opacity", 0);
+
+                // 9.5 更新现有折线（merge阶段）
+                newLines.merge(lines)
+                    .transition()
+                    .duration(800)
+                    .ease(d3.easeCubic)
+                    .attr("opacity", 1)
+                    .attr("d", d => lineGenerator(currentXScale, currentYScale)(d.values));
+
+                // 9.6 数据绑定：数据点元素（每个模型的每个数据集对应一个点）
+                const points = pointGroup.selectAll(".data-point")
+                    .data(processedData.flatMap(d => d.values), d => `${d.model}-${d.dataset}`);
+
+                // 9.7 移除已隐藏的点（exit阶段）
+                points.exit()
+                    .transition()
+                    .duration(500)
+                    .attr("r", 0)
+                    .attr("opacity", 0)
+                    .remove();
+
+                // 9.8 添加新数据点（enter阶段）
+                const newPoints = points.enter()
+                    .append("circle")
+                    .attr("class", "data-point")
+                    .attr("cx", d => currentXScale(d.dataset) + xScale.bandwidth() / 2)
+                    .attr("cy", d => currentYScale(d.value))
+                    .attr("r", 0) // 初始半径0，过渡到6
+                    .attr("fill", d => config.colors(d.model))
+                    .attr("stroke", "white")
+                    .attr("stroke-width", 1.2)
+                    .attr("cursor", "pointer")
+                    .on("mouseover", handlePointHover) 
+                    .on("mouseout", handlePointMouseOut)
+                    .on("click", handlePointClick);
+
+                // 9.9 更新现有数据点（merge阶段）
+                newPoints.merge(points)
+                    .transition()
+                    .duration(800)
+                    .ease(d3.easeCubic)
+                    .attr("cx", d => currentXScale(d.dataset) + xScale.bandwidth() / 2)
+                    .attr("cy", d => currentYScale(d.value))
+                    .attr("r", 6)
+                    .attr("fill", d => config.colors(d.model))
+                    .attr("opacity", 1);
+                
+                // 9.10 更新图例（同步模型显隐状态）
+                updateLegend();
+            }
+
+            // 10. 交互事件处理函数
+            // 10.1 数据点悬停：显示tooltip（参考摘要1、4、6）
+            function handlePointHover(event, d) {
+                // 显示tooltip，包含模型、数据集、指标数值
+                tooltip.style("opacity", 1)
+                    .style("left", `${event.pageX + 15}px`)
+                    .style("top", `${event.pageY - 25}px`)
+                    .html(`
+                        <div><strong>Model:</strong> ${d.model}</div>
+                        <div><strong>Dataset:</strong> ${d.dataset}</div>
+                        <div><strong>${config.activeMetric}:</strong> ${d.value.toFixed(2)}%</div>
+                    `);
+                // 高亮当前数据点（放大+加深颜色）
+                d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .attr("r", 8)
+                    .attr("stroke", "#333")
+                    .attr("stroke-width", 1.5);
+                // 高亮对应模型的折线（加粗）
+                lineGroup.selectAll(".model-line")
+                    .filter(lineD => lineD.model === d.model)
+                    .transition()
+                    .duration(300)
+                    .attr("stroke-width", 4)
+                    .attr("stroke", d => d3.color(config.colors(d.model)).darker(0.3));
+            }
+
+            // 10.2 数据点离开：隐藏tooltip并恢复样式
+            function handlePointMouseOut() {
+                // 隐藏tooltip
+                tooltip.style("opacity", 0);
+                // 恢复数据点样式
+                d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .attr("r", 6)
+                    .attr("stroke", "white")
+                    .attr("stroke-width", 1.2);
+                // 恢复对应模型的折线样式
+                const model = d3.select(this).datum().model;
+                lineGroup.selectAll(".model-line")
+                    .filter(lineD => lineD.model === model)
+                    .transition()
+                    .duration(300)
+                    .attr("stroke-width", 2.5)
+                    .attr("stroke", config.colors(model));
+            }
+
+            // 10.3 数据点点击：弹出详细信息（摘要1、6的点击交互）
+            function handlePointClick(event, d) {
+                // 点击数据点时，弹出浏览器默认提示框（可替换为自定义模态框）
+                alert(`
+                    Model: ${d.model}
+                    Dataset: ${d.dataset}
+                    Metric: ${config.activeMetric}
+                    Value: ${d.value.toFixed(2)}%
+                `);
+            }
+
+            // 10.4 更新图例：支持点击切换模型显隐（参考摘要4的图例交互）
+            function updateLegend() {
+                const legendItems = d3.select("#page-a4 .d3-legend")
+                    .selectAll(".d3-legend-item")
+                    .data(config.models, d => d);
+
+                // 移除已不存在的图例项
+                legendItems.exit().remove();
+
+                // 添加新图例项
+                const newLegendItems = legendItems.enter()
+                    .append("div")
+                    .attr("class", d => `d3-legend-item ${config.activeModels[d] ? "" : "disabled"}`)
+                    .on("click", toggleModel);
+
+                // 给图例项添加颜色条
+                newLegendItems.append("div")
+                    .attr("class", "d3-legend-color")
+                    .attr("style", d => `background-color: ${config.colors(d)}`);
+                // 给图例项添加文本
+                newLegendItems.append("span")
+                    .attr("class", "legend-text")
+                    .text(d => d);
+                // 更新现有图例项的显隐状态
+                newLegendItems.merge(legendItems)
+                    .attr("class", d => `d3-legend-item ${config.activeModels[d] ? "" : "disabled"}`);
+            }
+
+            // 10.5 切换模型显隐状态
+            function toggleModel(event, model) {
+                config.activeModels[model] = !config.activeModels[model];
+                updateChart(); // 重新渲染图表
+            }
+
+            // 10.6 切换指标（Std Acc/CRR/CRA）
+            d3.selectAll("#page-a4 .metric-btn")
+                .on("click", function() {
+                    // 更新按钮激活状态
+                    d3.selectAll("#page-a4 .metric-btn").classed("active", false).classed("bg-gray-600", true).classed("bg-primary", false);
+                    d3.select(this).classed("active", true).classed("bg-primary", true).classed("bg-gray-600", false);
+
+                    // 更新当前指标并重新渲染图表
+                    config.activeMetric = d3.select(this).attr("data-metric");
+                    updateChart();
+                });
+            // 10.7 重置缩放与平移
+            d3.select("#reset-zoom-a4")
+                .on("click", function() {
+                    currentTransform = d3.zoomIdentity;
+                    d3.select("#page-a4 .d3-chart-svg svg")
+                        .transition()
+                        .duration(800)
+                        .call(zoom.transform, d3.zoomIdentity); // 恢复初始缩放状态
+                    updateChart(); // 重绘确保点和线正确对齐
+                });
+            // 11. 初始化图表
+            updateChart();
+            d3ChartInitialized = true; // 标记已初始化
+        }
+
+
+        // ==============================================
+        // 4. 页面控制和初始化逻辑 (修复后的主导航逻辑)
+        // ==============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Main Navigation Functionality
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const pageContents = document.querySelectorAll('.page-content');
+            
+            navButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const pageId = this.getAttribute('data-page');
+                    
+                    // 1. 更新导航栏按钮样式
+                    navButtons.forEach(btn => btn.classList.remove('bg-primary', 'text-white'));
+                    this.classList.add('bg-primary', 'text-white');
+                    
+                    // 2. 切换页面内容
+                    pageContents.forEach(page => {
+                        page.classList.remove('active');
+                    });
+                    document.getElementById(pageId).classList.add('active');
+
+                    // 3. 运行特定页面的初始化函数 (确保只在页面切换时运行)
+                    if (pageId === 'page-a1') initPageA1();
+                    if (pageId === 'page-a3') initPageA3Navigation();
+                    if (pageId === 'page-a4') initPageA4();
+                    
+                    // Note: A2 and Overview are static and do not need separate JS initialization
+                });
+            });
+
+            // 初始设置：激活第一个页面并运行其初始化
+            document.querySelector('.nav-btn[data-page="page-overview"]').classList.add('bg-primary', 'text-white');
+            document.getElementById('page-overview').classList.add('active');
+            
+            // 预加载/预初始化 (安全地运行依赖 Chart/D3 的初始化)
+            initPageA1();
+            initPageA4();
+            initPageA3Navigation(); 
+        });
+    </script>
+</body>
+</html>
